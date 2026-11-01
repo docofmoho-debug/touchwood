@@ -8,7 +8,6 @@ import styles from "./CartPage.module.css";
 
 import {
   getCartItems,
-  getCartTotal,
   removeFromCart,
   updateCartQuantity,
   LOCAL_LIST_CHANGE_EVENT,
@@ -27,6 +26,44 @@ function getProductName(item: CartItem, locale: string) {
     name.ar ||
     name.en ||
     "منتج"
+  );
+}
+
+
+function getSelectedColorLabel(item: CartItem, locale: string): string | null {
+  const details = item.selectedColorDetails;
+
+  if (!details) {
+    return item.selectedColor || null;
+  }
+
+  const resolveText = (
+    value: { ar?: string; en?: string } | string | undefined
+  ): string | null => {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (value && typeof value === "object") {
+      const localized =
+        value[locale as "ar" | "en"] ||
+        value.ar ||
+        value.en;
+
+      if (localized?.trim()) {
+        return localized.trim();
+      }
+    }
+
+    return null;
+  };
+
+  return (
+    resolveText(details.name) ||
+    resolveText(details.label) ||
+    details.value ||
+    item.selectedColor ||
+    null
   );
 }
 
@@ -185,7 +222,7 @@ export default function CartPage() {
           <span className={styles.breadcrumbSeparator}>/</span>
 
           <span>
-            {isArabic ? "سلة التسوق" : "Shopping Cart"}
+            {isArabic ? "عربة التسوق" : "Shopping Cart"}
           </span>
         </nav>
 
@@ -195,12 +232,12 @@ export default function CartPage() {
             
 
             <h1>
-              {isArabic ? "سلة التسوق" : "Shopping Cart"}
+              {isArabic ? "عربة التسوق" : "Shopping Cart"}
             </h1>
 
             <p>
               {isArabic
-                ? `${items.length} ${items.length === 1 ? "منتج" : "منتجات"} في سلتك`
+                ? `${items.length} ${items.length === 1 ? "منتج" : "منتجات"} في عربة التسوق الخاصة بك`
                 : `${items.length} ${
                     items.length === 1 ? "item" : "items"
                   } in your cart`}
@@ -240,13 +277,13 @@ export default function CartPage() {
 
             <h2>
               {isArabic
-                ? "سلة التسوق فارغة"
+                ? "عربة التسوق فارغة"
                 : "Your cart is empty"}
             </h2>
 
             <p>
               {isArabic
-                ? "لم تقم بإضافة أي منتجات إلى سلة التسوق بعد."
+                ? "لم تقم بإضافة أي منتجات إلى عربة التسوق بعد."
                 : "You haven't added any products to your cart yet."}
             </p>
 
@@ -278,6 +315,7 @@ export default function CartPage() {
                   const product = item.product;
                   const image = getProductImage(item);
                   const name = getProductName(item, locale);
+                  const selectedColorLabel = getSelectedColorLabel(item, locale);
 
                   const itemTotal =
                     product.price * item.quantity;
@@ -323,14 +361,14 @@ export default function CartPage() {
                               {name}
                             </Link>
 
-                            {item.selectedColor && (
+                            {selectedColorLabel && (
                               <div className={styles.colorInfo}>
                                 <span className={styles.colorLabel}>
                                   {isArabic ? "اللون:" : "Color:"}
                                 </span>
 
                                 <span>
-                                  {item.selectedColor}
+                                  {selectedColorLabel}
                                 </span>
                               </div>
                             )}

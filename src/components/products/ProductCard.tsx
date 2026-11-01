@@ -9,31 +9,19 @@ import {
   FiHeart,
   FiShoppingCart,
   FiShuffle,
-  FiStar,
   FiCheck,
+  FiLoader,
 } from "react-icons/fi";
 
 import styles from "./ProductCard.module.css";
 
-import {
-  getDemoProductReviews,
-  getProductReviews,
-} from "@/services/api";
-
-import type { Product, Localized } from "@/types/product";
+import type {
+  Product,
+  Localized,
+} from "@/types/product";
 
 type ProductCardProps = {
   product: Product;
-};
-
-type Review = {
-  rating?: number;
-};
-
-type DemoReview = {
-  _id?: string;
-  rating?: number;
-  isDemo?: boolean;
 };
 
 const categories: Record<string, Localized> = {
@@ -45,6 +33,26 @@ const categories: Record<string, Localized> = {
   chairs: {
     ar: "كراسي",
     en: "Chairs",
+  },
+
+  "leather-chairs": {
+    ar: "كراسي جلد",
+    en: "Leather Chairs",
+  },
+
+  "mesh-chairs": {
+    ar: "كراسي شبك",
+    en: "Mesh Chairs",
+  },
+
+  "bar-chairs": {
+    ar: "كراسي بار",
+    en: "Bar Chairs",
+  },
+
+  "laboratory-chairs": {
+    ar: "كراسي معمل",
+    en: "Laboratory Chairs",
   },
 
   "office-sofas": {
@@ -81,6 +89,8 @@ type MessageType =
   | "favorite"
   | "compare"
   | "";
+
+type LoadingAction = "cart" | "favorite" | "compare" | "";
 
 function getStoredIds(key: string): string[] {
   if (typeof window === "undefined") {
@@ -147,40 +157,22 @@ export default function ProductCard({
   const [isCompared, setIsCompared] =
     useState(false);
 
-  const [realReviews, setRealReviews] =
-    useState<Review[]>([]);
-
-  const [demoReviews, setDemoReviews] =
-    useState<DemoReview[]>([]);
-
   const [message, setMessage] =
     useState("");
 
   const [messageType, setMessageType] =
     useState<MessageType>("");
 
-  /*
-   * مهم جداً:
-   *
-   * الـ Portal يجعل رسالة الإشعار خارج:
-   *
-   * Swiper
-   * SwiperSlide
-   * featured-products__container
-   *
-   * وبالتالي لن تتأثر بالـ transform
-   * أو overflow:hidden الموجود في القسم.
-   */
   const [portalReady, setPortalReady] =
     useState(false);
+
+  const [loadingAction, setLoadingAction] =
+    useState<LoadingAction>("");
 
   useEffect(() => {
     setPortalReady(true);
   }, []);
 
-  /*
-   * قراءة المفضلة والمقارنة
-   */
   useEffect(() => {
     setIsFavorite(
       getStoredIds(WISHLIST_KEY).includes(
@@ -239,11 +231,6 @@ export default function ProductCard({
     };
   }, [product._id]);
 
-  /*
-   * إخفاء الإشعار تلقائياً
-   *
-   * مدة الإشعار 3 ثوانٍ.
-   */
   useEffect(() => {
     if (!message) {
       return;
@@ -260,66 +247,12 @@ export default function ProductCard({
     };
   }, [message]);
 
-  /*
-   * تحميل التقييمات
-   */
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadReviews = async () => {
-      const [
-        realResult,
-        demoResult,
-      ] = await Promise.allSettled([
-        getProductReviews(product._id),
-        getDemoProductReviews(product._id),
-      ]);
-
-      if (!isMounted) {
-        return;
-      }
-
-      const realReviewsData =
-        realResult.status === "fulfilled" &&
-        Array.isArray(realResult.value)
-          ? realResult.value
-          : [];
-
-      const demoReviewsData =
-        demoResult.status === "fulfilled" &&
-        Array.isArray(demoResult.value)
-          ? demoResult.value
-          : [];
-
-      setRealReviews(realReviewsData);
-
-      setDemoReviews(
-        demoReviewsData.filter(
-          (review: DemoReview) =>
-            review?.isDemo === true
-        )
-      );
-    };
-
-    loadReviews();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [product._id]);
-
-  /*
-   * اسم المنتج
-   */
   const productName =
     product.name?.[locale] ||
     product.name?.ar ||
     product.name?.en ||
     "منتج";
 
-  /*
-   * التصنيف
-   */
   const category =
     categories[product.category];
 
@@ -328,15 +261,9 @@ export default function ProductCard({
     category?.ar ||
     product.category;
 
-  /*
-   * رابط المنتج
-   */
   const productHref =
     `/${locale}/products/${product.slug}`;
 
-  /*
-   * الصورة الرئيسية
-   */
   const primaryImage = useMemo(() => {
     return (
       product.media?.find(
@@ -349,64 +276,6 @@ export default function ProductCard({
     );
   }, [product.media]);
 
-  /*
-   * التقييمات الحقيقية
-   */
-  const validRealRatings =
-    realReviews
-      .map((review) =>
-        Number(review.rating)
-      )
-      .filter(
-        (value) =>
-          Number.isFinite(value) &&
-          value >= 1 &&
-          value <= 5
-      );
-
-  /*
-   * التقييمات التجريبية
-   */
-  const validDemoRatings =
-    demoReviews
-      .map((review) =>
-        Number(review.rating)
-      )
-      .filter(
-        (value) =>
-          Number.isFinite(value) &&
-          value >= 1 &&
-          value <= 5
-      );
-
-  const realReviewsCount =
-    validRealRatings.length;
-
-  const demoReviewsCount =
-    validDemoRatings.length;
-
-  const reviewsCount =
-    realReviewsCount +
-    demoReviewsCount;
-
-  const totalRating =
-    validRealRatings.reduce(
-      (sum, value) => sum + value,
-      0
-    ) +
-    validDemoRatings.reduce(
-      (sum, value) => sum + value,
-      0
-    );
-
-  const rating =
-    reviewsCount > 0
-      ? totalRating / reviewsCount
-      : 0;
-
-  /*
-   * الأسعار
-   */
   const oldPrice =
     Number(product.oldPrice) || 0;
 
@@ -438,132 +307,150 @@ export default function ProductCard({
         )
       : null;
 
-  /*
-   * المفضلة
-   */
-  const toggleWishlist = () => {
-    const current =
-      getStoredIds(WISHLIST_KEY);
+  const waitOneSecond = () =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 1000);
+    });
 
-    const next = current.includes(
-      product._id
-    )
-      ? current.filter(
-          (id) => id !== product._id
-        )
-      : [
-          ...current,
-          product._id,
-        ];
+  const toggleWishlist = async () => {
+    if (loadingAction) return;
 
-    saveStoredIds(
-      WISHLIST_KEY,
-      next
-    );
+    setLoadingAction("favorite");
 
-    const added =
-      next.includes(product._id);
+    try {
+      await waitOneSecond();
 
-    setIsFavorite(added);
+      const current = getStoredIds(WISHLIST_KEY);
 
-    setMessageType("favorite");
+      const next = current.includes(product._id)
+        ? current.filter((id) => id !== product._id)
+        : [...current, product._id];
 
-    setMessage(
-      added
-        ? locale === "ar"
-          ? "تمت إضافة المنتج إلى المفضلة"
-          : "Product added to wishlist"
-        : locale === "ar"
-          ? "تمت إزالة المنتج من المفضلة"
-          : "Product removed from wishlist"
-    );
+      saveStoredIds(WISHLIST_KEY, next);
+
+      const added = next.includes(product._id);
+
+      setIsFavorite(added);
+      setMessageType("favorite");
+      setMessage(
+        added
+          ? locale === "ar"
+            ? "تمت إضافة المنتج إلى المفضلة"
+            : "Product added to wishlist"
+          : locale === "ar"
+            ? "تمت إزالة المنتج من المفضلة"
+            : "Product removed from wishlist"
+      );
+    } finally {
+      setLoadingAction("");
+    }
   };
 
-  /*
-   * المقارنة
-   */
-  const MAX_COMPARE_PRODUCTS = 4;
+  const toggleCompare = async () => {
+    if (loadingAction) return;
 
-const toggleCompare = () => {
-  const current = getStoredIds(COMPARE_KEY);
+    setLoadingAction("compare");
 
-  // إذا كان المنتج موجودًا بالفعل → إزالته
-  if (current.includes(product._id)) {
-    const next = current.filter(
-      (id) => id !== product._id
-    );
+    try {
+      await waitOneSecond();
 
-    saveStoredIds(COMPARE_KEY, next);
+      const current = getStoredIds(COMPARE_KEY);
 
-    setIsCompared(false);
-    setMessageType("compare");
+      if (current.includes(product._id)) {
+        const next = current.filter((id) => id !== product._id);
 
-    setMessage(
-      locale === "ar"
-        ? "تمت إزالة المنتج من المقارنة"
-        : "Product removed from compare"
-    );
+        saveStoredIds(COMPARE_KEY, next);
+        setIsCompared(false);
+        setMessageType("compare");
+        setMessage(
+          locale === "ar"
+            ? "تمت إزالة المنتج من المقارنة"
+            : "Product removed from compare"
+        );
 
-    return;
-  }
+        return;
+      }
 
-  // منع إضافة المنتج الخامس
-  if (current.length >= MAX_COMPARE_PRODUCTS) {
-    setIsCompared(false);
-    setMessageType("compare");
+      if (current.length >= 4) {
+        setIsCompared(false);
+        setMessageType("compare");
+        setMessage(
+          locale === "ar"
+            ? "يمكنك مقارنة 4 منتجات فقط"
+            : "You can compare up to 4 products only"
+        );
 
-    setMessage(
-      locale === "ar"
-        ? "يمكنك مقارنة 4 منتجات فقط"
-        : "You can compare up to 4 products only"
-    );
+        return;
+      }
 
-    return;
-  }
+      const next = [...current, product._id];
 
-  // إضافة المنتج
-  const next = [
-    ...current,
-    product._id,
-  ];
-
-  saveStoredIds(COMPARE_KEY, next);
-
-  setIsCompared(true);
-  setMessageType("compare");
-
-  setMessage(
-    locale === "ar"
-      ? "تمت إضافة المنتج إلى المقارنة"
-      : "Product added to compare"
-  );
-};
-
-  /*
-   * إضافة إلى السلة
-   */
-  const handleAddToCart = () => {
-    addToCart(
-      product,
-      1,
-      null
-    );
-
-    setMessageType("cart");
-
-    setMessage(
-      locale === "ar"
-        ? "تمت إضافة المنتج إلى السلة"
-        : "Product added to cart"
-    );
+      saveStoredIds(COMPARE_KEY, next);
+      setIsCompared(true);
+      setMessageType("compare");
+      setMessage(
+        locale === "ar"
+          ? "تمت إضافة المنتج إلى المقارنة"
+          : "Product added to compare"
+      );
+    } finally {
+      setLoadingAction("");
+    }
   };
 
-  /*
-   * رسالة الإشعار
-   *
-   * يتم إخراجها إلى document.body
-   * باستخدام Portal.
-   */
+  const handleAddToCart = async () => {
+    if (loadingAction) return;
+
+    const productColors = Array.isArray(product.colors)
+      ? product.colors
+      : [];
+
+    // إذا كان للمنتج أكثر من لون، انتقل إلى صفحة التفاصيل
+    // حتى يختار العميل اللون بنفسه.
+    if (productColors.length > 1) {
+      window.location.assign(productHref);
+      return;
+    }
+
+    // إذا كان له لون واحد، أضفه إلى السلة باللون الوحيد تلقائيًا.
+    // إذا لم يكن له ألوان، أضفه دون لون.
+    const onlyColor = productColors[0];
+    let selectedColorId: string | null = null;
+
+    if (onlyColor) {
+      if (typeof onlyColor._id === "string" && onlyColor._id.trim()) {
+        selectedColorId = onlyColor._id;
+      } else {
+        // يجب أن تتطابق هذه الصيغة مع getColorId في localStore.
+        const colorValue =
+          onlyColor.hex ||
+          onlyColor.color ||
+          onlyColor.value ||
+          onlyColor.code ||
+          "";
+
+        selectedColorId = `${colorValue}-0`;
+      }
+    }
+
+    setLoadingAction("cart");
+
+    try {
+      await waitOneSecond();
+
+      addToCart(product, 1, selectedColorId);
+
+      setMessageType("cart");
+      setMessage(
+        locale === "ar"
+          ? "تمت إضافة المنتج إلى العربة"
+          : "Product added to cart"
+      );
+    } finally {
+      setLoadingAction("");
+    }
+  };
+
   const messagePortal =
     portalReady &&
     message &&
@@ -621,25 +508,26 @@ const toggleCompare = () => {
                   ? styles.actionActive
                   : ""
               }`}
-              onClick={
-                toggleWishlist
-              }
+              onClick={toggleWishlist}
+              disabled={Boolean(loadingAction)}
               aria-label={
                 locale === "ar"
                   ? "إضافة إلى المفضلة"
                   : "Add to wishlist"
               }
-              aria-pressed={
-                isFavorite
-              }
+              aria-pressed={isFavorite}
             >
-              <FiHeart
-                className={
-                  isFavorite
-                    ? styles.filledIcon
-                    : ""
-                }
-              />
+              {loadingAction === "favorite" ? (
+                <FiLoader className={styles.spinner} />
+              ) : (
+                <FiHeart
+                  className={
+                    isFavorite
+                      ? styles.filledIcon
+                      : ""
+                  }
+                />
+              )}
             </button>
 
             <button
@@ -649,19 +537,18 @@ const toggleCompare = () => {
                   ? styles.actionActive
                   : ""
               }`}
-              onClick={
-                toggleCompare
-              }
+              onClick={toggleCompare}
+              disabled={Boolean(loadingAction)}
               aria-label={
                 locale === "ar"
                   ? "إضافة إلى المقارنة"
                   : "Add to compare"
               }
-              aria-pressed={
-                isCompared
-              }
+              aria-pressed={isCompared}
             >
-              {isCompared ? (
+              {loadingAction === "compare" ? (
+                <FiLoader className={styles.spinner} />
+              ) : isCompared ? (
                 <FiCheck />
               ) : (
                 <FiShuffle />
@@ -691,15 +578,11 @@ const toggleCompare = () => {
                   ] ||
                   productName
                 }
-                className={
-                  styles.image
-                }
+                className={styles.image}
               />
             ) : (
               <div
-                className={
-                  styles.noImage
-                }
+                className={styles.noImage}
               >
                 <span>
                   {locale === "ar"
@@ -716,9 +599,7 @@ const toggleCompare = () => {
         >
           <a
             href={`/${locale}/category/${product.category}`}
-            className={
-              styles.category
-            }
+            className={styles.category}
           >
             {categoryName}
           </a>
@@ -732,46 +613,6 @@ const toggleCompare = () => {
           >
             {productName}
           </a>
-
-          <div
-            className={styles.rating}
-          >
-            <div
-              className={styles.stars}
-            >
-              {[1, 2, 3, 4, 5].map(
-                (star) => (
-                  <FiStar
-                    key={star}
-                    className={
-                      star <=
-                      Math.round(
-                        rating
-                      )
-                        ? styles.starActive
-                        : styles.starInactive
-                    }
-                  />
-                )
-              )}
-            </div>
-
-            <span
-              className={
-                styles.ratingValue
-              }
-            >
-              {rating.toFixed(1)}
-            </span>
-
-            <span
-              className={
-                styles.reviewsCount
-              }
-            >
-              ({reviewsCount})
-            </span>
-          </div>
 
           <div
             className={styles.prices}
@@ -802,22 +643,32 @@ const toggleCompare = () => {
           </div>
 
           <button
-            type="button"
-            className={
-              styles.cartButton
-            }
-            onClick={
-              handleAddToCart
-            }
-          >
-            <FiShoppingCart />
+  type="button"
+  className={styles.cartButton}
+  onClick={handleAddToCart}
+  disabled={Boolean(loadingAction)}
+  aria-label={
+    locale === "ar"
+      ? "إضافة إلى العربة"
+      : "Add to cart"
+  }
+>
+  <span>
+    {loadingAction === "cart"
+      ? locale === "ar"
+        ? "جارٍ الإضافة..."
+        : "Adding..."
+      : locale === "ar"
+        ? "إضافة إلى العربة"
+        : "Add to cart"}
+  </span>
 
-            <span>
-              {locale === "ar"
-                ? "إضافة إلى السلة"
-                : "Add to cart"}
-            </span>
-          </button>
+  {loadingAction === "cart" ? (
+    <FiLoader className={styles.spinner} />
+  ) : (
+    <FiShoppingCart />
+  )}
+</button>
         </div>
       </article>
     </>

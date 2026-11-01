@@ -177,8 +177,8 @@ const getPaymentMethod = (
     case "Vodafone Cash":
       return text(
         locale,
-        "فودافون كاش",
-        "Vodafone Cash"
+        "فودافون كاش او انستاباي على الرقم 01142447767",
+         "Vodafone Cash or instapay on 01142447767"
       );
 
     case "Visa":
@@ -1039,7 +1039,7 @@ export default function AccountPage() {
                   "My Account"
                 )}
               </h1>
-
+<br />
               <p>
                 {text(
                   locale,

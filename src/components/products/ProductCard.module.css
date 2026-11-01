@@ -505,4 +505,48 @@
     padding: 10px 14px;
     font-size: 13px;
   }
+}.spinner {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  animation: productCardSpin 0.7s linear infinite;
+}
+
+@keyframes productCardSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.actionButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+.actionButton:disabled:hover {
+  transform: none;
+}
+
+.cartButton:disabled {
+  opacity: 0.85;
+  cursor: wait;
+  transform: none;
+}
+
+.cartButton:disabled:hover {
+  background: #238a37;
+  transform: none;
+}
+
+.cartButton .spinner {
+  width: 17px;
+  height: 17px;
+}
+
+@media (max-width: 480px) {
+  .cartButton .spinner {
+    width: 14px;
+    height: 14px;
+  }
 }

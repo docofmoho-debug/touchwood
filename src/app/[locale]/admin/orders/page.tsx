@@ -150,7 +150,38 @@ const money = (
       maximumFractionDigits: 0,
     }
   ).format(value || 0);
+const getOrderColorName = (
+  item: OrderProduct,
+  locale: Locale
+): string => {
+  const savedName =
+    item.colorName?.[locale]?.trim();
 
+  if (savedName) {
+    return savedName;
+  }
+
+  const fallbackName =
+    item.colorName?.ar?.trim() ||
+    item.colorName?.en?.trim();
+
+  if (fallbackName) {
+    return fallbackName;
+  }
+
+  const matchingColor =
+    item.product?.colors?.find(
+      (color) =>
+        color._id === item.colorId
+    );
+
+  return (
+    matchingColor?.name?.[locale]?.trim() ||
+    matchingColor?.name?.ar?.trim() ||
+    matchingColor?.name?.en?.trim() ||
+    ""
+  );
+};
 const statusLabel = (
   status: string,
   locale: Locale
@@ -1666,28 +1697,65 @@ export default function OrdersPage() {
                     className="orders-detail-product"
                     key={`${detailsOrder._id}-${index}`}
                   >
-                    <div>
-                      <strong>
-                        {productName(
-                          item.product,
-                          locale
-                        )}
-                      </strong>
+                    <div className="orders-detail-product-info">
+  <strong>
+    {productName(
+      item.product,
+      locale
+    )}
+  </strong>
 
-                      {item
-                        .colorName?.[
-                        locale
-                      ] && (
-                        <small>
-                          {
-                            item
-                              .colorName[
-                              locale
-                            ]
-                          }
-                        </small>
-                      )}
-                    </div>
+  {item.colorId && (
+    <div
+      className="orders-detail-color"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        marginTop: "6px",
+        fontSize: "13px",
+      }}
+    >
+      {item.colorHex && (
+        <span
+          aria-label={text(
+            locale,
+            "عينة اللون",
+            "Color swatch"
+          )}
+          title={item.colorHex}
+          style={{
+            display: "inline-block",
+            width: "18px",
+            height: "18px",
+            minWidth: "18px",
+            borderRadius: "50%",
+            backgroundColor:
+              /^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(
+                item.colorHex
+              )
+                ? item.colorHex
+                : "#cccccc",
+            border: "1px solid rgba(0,0,0,0.2)",
+            boxSizing: "border-box",
+          }}
+        />
+      )}
+
+      <span>
+        {getOrderColorName(
+          item,
+          locale
+        ) ||
+          text(
+            locale,
+            "لون غير محدد",
+            "Color not specified"
+          )}
+      </span>
+    </div>
+  )}
+</div>
 
                     <span>
                       ×

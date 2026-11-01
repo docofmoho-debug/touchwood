@@ -12,6 +12,7 @@ import {
   Truck,
   ShieldCheck,
   GitCompareArrows,
+  LoaderCircle,
 } from "lucide-react";
 
 import { FaWhatsapp } from "react-icons/fa";
@@ -283,6 +284,9 @@ export default function ProductDetailsPage() {
     useState<
       "cart" | "favorite" | "compare" | "error" | ""
     >("");
+
+  const [loadingAction, setLoadingAction] =
+    useState<"cart" | "favorite" | "compare" | "">("");
 useEffect(() => {
   if (!message) return;
 
@@ -311,7 +315,19 @@ useEffect(() => {
         setProduct(item);
         setSelectedImage(0);
         setQuantity(1);
-        setSelectedColor(null);
+
+        // Select the only available color automatically.
+        // Products with multiple colors require an explicit customer choice.
+        const availableColors = Array.isArray(item.colors)
+          ? item.colors
+          : [];
+
+        setSelectedColor(
+          availableColors.length === 1
+            ? availableColors[0]._id ||
+                `${getColorValue(availableColors[0])}-0`
+            : null,
+        );
 
      const [
   reviewResult,
@@ -494,8 +510,38 @@ setReviews([
         )
       : 0;
 
-  const addToCart = () => {
-    if (!product) return;
+  const waitOneSecond = () =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 1000);
+    });
+
+  const addToCart = async () => {
+    if (!product || loadingAction) return;
+
+    const availableColors = Array.isArray(product.colors)
+      ? product.colors
+      : [];
+
+    // A product with multiple colors must have one selected before adding.
+    if (availableColors.length > 1 && !selectedColor) {
+      setMessageType("error");
+      setMessage(
+        t(
+          locale,
+          "يرجى اختيار اللون أولًا قبل إضافة المنتج إلى السلة",
+          "Please choose a color before adding this product to your cart",
+        ),
+      );
+      return;
+    }
+
+    // Guard against an unset selection if the product has exactly one color.
+    const colorToAdd =
+      selectedColor ||
+      (availableColors.length === 1
+        ? availableColors[0]._id ||
+          `${getColorValue(availableColors[0])}-0`
+        : null);
 
     if (isOutOfStock) {
       setMessageType("error");
@@ -521,72 +567,96 @@ setReviews([
       return;
     }
 
-    addLocalToCart(
-      product as LocalProduct,
-      quantity,
-      selectedColor,
-    );
+    setLoadingAction("cart");
 
-    setMessageType("cart");
-    setMessage(
-      t(
-        locale,
-        "تمت إضافة المنتج إلى السلة",
-        "Product added to cart",
-      ),
-    );
+    try {
+      await waitOneSecond();
+
+      addLocalToCart(
+        product as LocalProduct,
+        quantity,
+        colorToAdd,
+      );
+
+      setMessageType("cart");
+      setMessage(
+        t(
+          locale,
+          "تمت إضافة المنتج إلى عربة التسوق",
+          "Product added to cart",
+        ),
+      );
+    } finally {
+      setLoadingAction("");
+    }
   };
 
-  const toggleFavorite = () => {
-    if (!product) return;
+  const toggleFavorite = async () => {
+    if (!product || loadingAction) return;
 
-    const isAdded = toggleStoredId(
-      WISHLIST_KEY,
-      product._id,
-    );
+    setLoadingAction("favorite");
 
-    setFavorite(isAdded);
+    try {
+      await waitOneSecond();
 
-    setMessageType("favorite");
-    setMessage(
-      isAdded
-        ? t(
-            locale,
-            "تمت إضافة المنتج إلى المفضلة",
-            "Product added to wishlist",
-          )
-        : t(
-            locale,
-            "تمت إزالة المنتج من المفضلة",
-            "Product removed from wishlist",
-          ),
-    );
+      const isAdded = toggleStoredId(
+        WISHLIST_KEY,
+        product._id,
+      );
+
+      setFavorite(isAdded);
+
+      setMessageType("favorite");
+      setMessage(
+        isAdded
+          ? t(
+              locale,
+              "تمت إضافة المنتج إلى المفضلة",
+              "Product added to wishlist",
+            )
+          : t(
+              locale,
+              "تمت إزالة المنتج من المفضلة",
+              "Product removed from wishlist",
+            ),
+      );
+    } finally {
+      setLoadingAction("");
+    }
   };
 
-  const toggleCompare = () => {
-    if (!product) return;
+  const toggleCompare = async () => {
+    if (!product || loadingAction) return;
 
-    const isAdded = toggleStoredId(
-      COMPARE_KEY,
-      product._id,
-    );
+    setLoadingAction("compare");
 
-    setCompared(isAdded);
+    try {
+      await waitOneSecond();
 
-    setMessageType("compare");
-    setMessage(
-      isAdded
-        ? t(
-            locale,
-            "تمت إضافة المنتج إلى المقارنة",
-            "Product added to comparison",
-          )
-        : t(
-            locale,
-            "تمت إزالة المنتج من المقارنة",
-            "Product removed from comparison",
-          ),
-    );
+      const isAdded = toggleStoredId(
+        COMPARE_KEY,
+        product._id,
+      );
+
+      setCompared(isAdded);
+
+      setMessageType("compare");
+      setMessage(
+        isAdded
+          ? t(
+              locale,
+              "تمت إضافة المنتج إلى المقارنة",
+              "Product added to comparison",
+            )
+          : t(
+              locale,
+              "تمت إزالة المنتج من المقارنة",
+              "Product removed from comparison",
+            ),
+      );
+    } finally {
+      setLoadingAction("");
+    }
   };
 
   if (loading) {
@@ -966,28 +1036,25 @@ setReviews([
 
               <button
                 type="button"
-                className={
-                  styles.cartButton
-                }
+                className={styles.cartButton}
                 onClick={addToCart}
                 disabled={
+                  Boolean(loadingAction) ||
                   isOutOfStock ||
                   quantity > stock
                 }
               >
-                <ShoppingCart size={19} />
+                {loadingAction === "cart" ? (
+                  <LoaderCircle className={styles.actionSpinner} size={19} />
+                ) : (
+                  <ShoppingCart size={19} />
+                )}
 
-                {isOutOfStock
-                  ? t(
-                      locale,
-                      "نفد المخزون",
-                      "Out of stock",
-                    )
-                  : t(
-                      locale,
-                      "أضف إلى السلة",
-                      "Add to cart",
-                    )}
+                {loadingAction === "cart"
+                  ? t(locale, "جارٍ الإضافة...", "Adding...")
+                  : isOutOfStock
+                    ? t(locale, "نفد المخزون", "Out of stock")
+                    : t(locale, "أضف إلى عربة التسوق", "Add to cart")}
               </button>
 
               <button
@@ -996,26 +1063,28 @@ setReviews([
                   styles.iconButton
                 }
                 onClick={toggleFavorite}
+                disabled={Boolean(loadingAction)}
                 aria-label={t(
                   locale,
                   "المفضلة",
                   "Favorites",
                 )}
               >
-                <Heart
-                  size={20}
-                  fill={
-                    favorite
-                      ? "currentColor"
-                      : "none"
-                  }
-                />
+                {loadingAction === "favorite" ? (
+                  <LoaderCircle className={styles.actionSpinner} size={20} />
+                ) : (
+                  <Heart
+                    size={20}
+                    fill={favorite ? "currentColor" : "none"}
+                  />
+                )}
               </button>
 
               <button
                 type="button"
                 className={styles.iconButton}
                 onClick={toggleCompare}
+                disabled={Boolean(loadingAction)}
                 aria-label={t(
                   locale,
                   "المقارنة",
@@ -1023,9 +1092,11 @@ setReviews([
                 )}
                 aria-pressed={compared}
               >
-                <GitCompareArrows
-                  size={20}
-                />
+                {loadingAction === "compare" ? (
+                  <LoaderCircle className={styles.actionSpinner} size={20} />
+                ) : (
+                  <GitCompareArrows size={20} />
+                )}
               </button>
             </div>
 <div
@@ -1071,8 +1142,8 @@ setReviews([
 
               {t(
                 locale,
-                "شحن سريع لجميع انحاء الجمهورية بتكلفة 250 جنيه في فترة من 3 ل5 ايام عمل",
-                "Reliable shipping and support",
+                "شحن لجميع انحاء مصر بتكلفة 250 جنيه تدفع مقدما مع اتاحة المعاينة و يصل المنتج في نفس اليوم في القاهرة و الجيزة و في خلال من 3 ل5 ايام في باقي المحافظات ",
+                "Shipping is available throughout Egypt for a fee of 250 EGP, payable in advance. You may inspect the product upon delivery. In Cairo and Giza, the product arrives on the same day, while for other governorates, delivery takes 3 to 5 days.",
               )}
             </div>
           </div>
@@ -1098,8 +1169,8 @@ setReviews([
               <p>
                 {t(
                   locale,
-                  "تقدم تاتش وود ضماناً سارياً من تاريخ الفاتورة الشرائية لمدة 12 شهراً على جميع كراسي والأنتريهات المكتبية، وضماناً ممتداً لمدة 36 شهراً على كافة المكاتب من تصنيعنا.",
-                  "Touch Wood offers a 12-month warranty starting from the date of purchase on all office chairs and sofas, and an extended 36-month warranty on all desks of our own manufacture.",
+                  "نؤمن في تاتش وود بجودة منتجاتنا، لذلك نقدم لك ضماناً لمدة سنة او اكثر حسب المنتج يبدأ من تاريخ استلام المنتج، مع توفير خدمات الصيانة مدى الحياة وقطع الغيار لمساعدتك في الحفاظ على منتجك والاستفادة منه لأطول فترة ممكنة.",
+              "At Touchwood, we believe in the quality of our products. That is why we provide a warranty starting from one year starting from the date of product receipt, along with lifetime maintenance services and spare parts availability to help you maintain your product and enjoy it for as long as possible."
                 )}
               </p>
             </div>

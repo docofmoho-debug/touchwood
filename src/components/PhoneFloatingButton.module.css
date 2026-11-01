@@ -1,0 +1,100 @@
+
+.button {
+  position: fixed;
+  bottom: 94px;
+  z-index: 9998;
+
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.24);
+
+  text-decoration: none;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.ltr {
+  left: 24px;
+  right: auto;
+}
+
+.rtl {
+  right: 24px;
+  left: auto;
+}
+
+.button:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.3);
+}
+
+.button:active {
+  transform: scale(0.96);
+}
+
+.icon {
+  width: 29px;
+  height: 29px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 768px) {
+  .button {
+    bottom: 148px;
+    width: 54px;
+    height: 54px;
+  }
+
+  .ltr {
+    left: 18px;
+    right: auto;
+  }
+
+  .rtl {
+    right: 18px;
+    left: auto;
+  }
+
+  .icon {
+    width: 27px;
+    height: 27px;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    bottom: 140px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .ltr {
+    left: 15px;
+    right: auto;
+  }
+
+  .rtl {
+    right: 15px;
+    left: auto;
+  }
+
+  .icon {
+    width: 26px;
+    height: 26px;
+  }
+}

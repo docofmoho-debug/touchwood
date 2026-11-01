@@ -1,18 +1,20 @@
 
 const API_URL =
-  "https://touchwood-production-adb9.up.railway.app/api";
-
+  "https://touchwood-oo1l.onrender.com/api";
+const PRODUCT_REVIEWS_API_URL =
+  typeof window === "undefined"
+    ? API_URL
+    : "/api";
 const apiRequest = async (
   path,
   {
     method = "GET",
     token,
-    body,
+    body,baseUrl = API_URL,
   } = {}
 ) => {
   const response = await fetch(
-    `${API_URL}${path}`,
-    {
+`${baseUrl}${path}`,    {
       method,
 
       headers: {
@@ -90,30 +92,79 @@ export const getProducts = async (params = {}) => {
   }
 
   if (params.featured !== undefined) {
-    query.set("featured", String(params.featured));
+    query.set(
+      "featured",
+      String(params.featured)
+    );
   }
 
   if (params.active !== undefined) {
-    query.set("active", String(params.active));
+    query.set(
+      "active",
+      String(params.active)
+    );
   }
 
   if (params.search?.trim()) {
-    query.set("search", params.search.trim());
+    query.set(
+      "search",
+      params.search.trim()
+    );
   }
 
   if (params.limit !== undefined) {
-    query.set("limit", String(params.limit));
+    query.set(
+      "limit",
+      String(params.limit)
+    );
   }
 
   if (params.page !== undefined) {
-    query.set("page", String(params.page));
+    query.set(
+      "page",
+      String(params.page)
+    );
   }
 
   const queryString = query.toString();
 
-  return apiRequest(
-    `/products${queryString ? `?${queryString}` : ""}`
+  /*
+   * طلبات المنتجات العامة تمر عبر
+   * Cloudflare Worker حتى يتم تخزينها في Cache.
+   *
+   * باقي الـ API يستمر في استخدام Railway
+   * مباشرة كما هو.
+   */
+  const response = await fetch(
+    `/api/products${
+      queryString
+        ? `?${queryString}`
+        : ""
+    }`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    }
   );
+
+  const data = await response
+    .json()
+    .catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(
+      data?.message ||
+        "Failed to load products"
+    );
+
+    error.code = data?.code;
+
+    throw error;
+  }
+
+  return data;
 };
 
 export const getProductById = async (id) => {
@@ -178,24 +229,26 @@ export const createUploadUrl = async (
 
 export const uploadImageToR2 = async (
   uploadUrl,
-  file
+  fileBlob,
+  contentType
 ) => {
   const response = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": file.type,
+      "Content-Type": contentType,
     },
-    body: file,
+    body: fileBlob,
   });
 
   if (!response.ok) {
-   const error = new Error(
-  data?.message || "Request failed"
-);
+    const error = new Error(
+      "Failed to upload file"
+    );
 
-error.code = data?.code;
+    error.code =
+      `UPLOAD_${response.status}`;
 
-throw error;
+    throw error;
   }
 };
 
@@ -619,6 +672,9 @@ export const deleteAdminNotification = async (
 export const getDemoProductReviews = async (productId) => {
   const response = await apiRequest(
     `/demo-reviews/product/${productId}`,
+    {
+      baseUrl: PRODUCT_REVIEWS_API_URL,
+    }
   );
 
   return Array.isArray(response)
@@ -628,19 +684,20 @@ export const getDemoProductReviews = async (productId) => {
         response?.data ||
         [];
 };
-export const getProductReviews = async (
-  productId
-) => {
+export const getProductReviews = async (productId) => {
   const response = await apiRequest(
-    `/reviews/product/${productId}`
+    `/reviews/product/${productId}`,
+    {
+      baseUrl: PRODUCT_REVIEWS_API_URL,
+    }
   );
 
   return Array.isArray(response)
     ? response
     : response?.reviews ||
-      response?.data?.reviews ||
-      response?.data ||
-      [];
+        response?.data?.reviews ||
+        response?.data ||
+        [];
 };
 
 export const getOrderReviewStatus = async (

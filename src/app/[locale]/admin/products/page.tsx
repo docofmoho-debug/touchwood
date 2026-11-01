@@ -88,6 +88,10 @@ const LOW_STOCK_THRESHOLD = 5;
 const categories = [
   ["computer-desks", "مكاتب وطاولات كمبيوتر"],
   ["chairs", "كراسي"],
+  ["mesh-chairs", "كراسي شبك"],
+  ["leather-chairs", "كراسي جلد"],
+  ["bar-chairs", "كراسي بار"],
+  ["laboratory-chairs", "كراسي معامل"],
   ["office-sofas", "انتريهات مكتبية"],
   ["work-cells", "خلايا العمل"],
   ["reception-counters", "كاونتر استقبال"],
@@ -489,147 +493,171 @@ setProducts(
     setShowForm(true);
   };
 
-  const uploadImage = async (
-    file: File,
-    isPrimary: boolean
-  ) => {
-    const token =
-      localStorage.getItem("token");
+const uploadImage = async (
+  file: File,
+  fileData: ArrayBuffer,
+  isPrimary: boolean
+) => {
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      handleSessionExpired();
-      throw new Error(
-        "انتهت جلسة تسجيل الدخول"
-      );
-    }
+  if (!token) {
+    handleSessionExpired();
+    throw new Error(
+      "انتهت جلسة تسجيل الدخول"
+    );
+  }
 
-    if (
-      !file.type.startsWith("image/")
-    ) {
-      throw new Error(
-        "يمكن رفع الصور فقط"
-      );
-    }
+  if (!file.type.startsWith("image/")) {
+    throw new Error(
+      "يمكن رفع الصور فقط"
+    );
+  }
 
-    const MAX_FILE_SIZE =
-      10 * 1024 * 1024;
+  const MAX_FILE_SIZE =
+    10 * 1024 * 1024;
 
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error(
-        "حجم الصورة يجب ألا يتجاوز 10MB"
-      );
-    }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(
+      "حجم الصورة يجب ألا يتجاوز 10MB"
+    );
+  }
 
-    try {
-      const upload =
-        await createUploadUrl(
-          token,
-          file.name,
-          file.type,
-          "products/gallery"
-        );
-
-      await uploadImageToR2(
-        upload.uploadUrl,
-        file
+  try {
+    const upload =
+      await createUploadUrl(
+        token,
+        file.name,
+        file.type,
+        "products/gallery"
       );
 
-      return {
-        type: "image" as const,
-        url: upload.publicUrl,
-        storageKey: upload.key,
-        thumbnail:
-          upload.publicUrl,
-        alt: {
-          ar: form.name.ar,
-          en: form.name.en,
-        },
-        sortOrder: 0,
-        isPrimary,
-      };
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        handleSessionExpired();
-      }
-
-      throw error;
-    }
-  };
-
-  const handleImageUpload = async (
-    event: ChangeEvent<HTMLInputElement>,
-    target:
-      | "primary"
-      | "gallery"
-  ) => {
-    const files = Array.from(
-      event.target.files || []
+    await uploadImageToR2(
+      upload.uploadUrl,
+      fileData,
+      file.type
     );
 
-    if (!files.length) {
+    return {
+      type: "image" as const,
+      url: upload.publicUrl,
+      storageKey: upload.key,
+      thumbnail: upload.publicUrl,
+      alt: {
+        ar: form.name.ar,
+        en: form.name.en,
+      },
+      sortOrder: 0,
+      isPrimary,
+    };
+  } catch (error) {
+    if (isUnauthorizedError(error)) {
+      handleSessionExpired();
+    }
+
+    throw error;
+  }
+};
+
+  const handleImageUpload = async (
+  event: ChangeEvent<HTMLInputElement>,
+  target: "primary" | "gallery"
+) => {
+  const files = Array.from(
+    event.target.files || []
+  );
+
+  if (!files.length) {
+    return;
+  }
+
+  try {
+    setUploading(true);
+    clearFormError();
+
+    const uploadedImages: Media[] = [];
+
+    for (const file of files) {
+      const fileData = await new Promise<ArrayBuffer>(
+        (resolve, reject) => {
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            if (reader.result instanceof ArrayBuffer) {
+              resolve(reader.result);
+            } else {
+              reject(
+                new Error(
+                  "تعذر قراءة بيانات الصورة"
+                )
+              );
+            }
+          };
+
+          reader.onerror = () => {
+            reject(
+              new Error(
+                "تعذر قراءة الصورة من الجهاز"
+              )
+            );
+          };
+
+          reader.onabort = () => {
+            reject(
+              new Error(
+                "تم إلغاء قراءة الصورة"
+              )
+            );
+          };
+
+          reader.readAsArrayBuffer(file);
+        }
+      );
+
+      uploadedImages.push(
+        await uploadImage(
+          file,
+          fileData,
+          target === "primary"
+        )
+      );
+    }
+
+    if (target === "primary") {
+      setPrimaryImage(uploadedImages[0]);
+
+      if (uploadedImages.length > 1) {
+        setGalleryImages((current) => [
+          ...current,
+          ...uploadedImages.slice(1),
+        ]);
+      }
+    } else {
+      setGalleryImages((current) => [
+        ...current,
+        ...uploadedImages,
+      ]);
+    }
+
+    showMessage(
+      "تم رفع الصورة بنجاح",
+      "success"
+    );
+  } catch (error) {
+    if (isUnauthorizedError(error)) {
+      handleSessionExpired();
       return;
     }
 
-    try {
-      setUploading(true);
-      clearFormError();
-
-      const uploadedImages: Media[] =
-        [];
-
-      for (const file of files) {
-        uploadedImages.push(
-          await uploadImage(
-            file,
-            target === "primary"
-          )
-        );
-      }
-
-      if (target === "primary") {
-        setPrimaryImage(
-          uploadedImages[0]
-        );
-
-        if (
-          uploadedImages.length > 1
-        ) {
-          setGalleryImages(
-            (current) => [
-              ...current,
-              ...uploadedImages.slice(1),
-            ]
-          );
-        }
-      } else {
-        setGalleryImages(
-          (current) => [
-            ...current,
-            ...uploadedImages,
-          ]
-        );
-      }
-
-      showMessage(
-        "تم رفع الصورة بنجاح",
-        "success"
-      );
-    } catch (error) {
-      if (isUnauthorizedError(error)) {
-        handleSessionExpired();
-        return;
-      }
-
-      showFormError(
-        error instanceof Error
-          ? error.message
-          : "تعذر رفع الصورة"
-      );
-    } finally {
-      setUploading(false);
-      event.target.value = "";
-    }
-  };
+    showFormError(
+      error instanceof Error
+        ? error.message
+        : "تعذر رفع الصورة"
+    );
+  } finally {
+    setUploading(false);
+    event.target.value = "";
+  }
+};
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>

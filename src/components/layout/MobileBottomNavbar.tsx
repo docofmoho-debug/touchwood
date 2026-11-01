@@ -83,7 +83,7 @@ export default function MobileBottomNavbar() {
     >
       <div className={styles.container}>
         {/* Wishlist */}
-        <Link
+        <Link prefetch={false}
           href={`/${locale}/wishlist`}
           className={styles.action}
           aria-label={
@@ -106,7 +106,7 @@ export default function MobileBottomNavbar() {
         </Link>
 
         {/* Compare */}
-        <Link
+        <Link prefetch={false}
           href={`/${locale}/compare`}
           className={styles.action}
           aria-label={
@@ -129,11 +129,11 @@ export default function MobileBottomNavbar() {
         </Link>
 
         {/* Cart */}
-        <Link
+        <Link prefetch={false}
           href={`/${locale}/cart`}
           className={styles.action}
           aria-label={
-            locale === "ar" ? "السلة" : "Cart"
+            locale === "ar" ? "عربة التسوق" : "Cart"
           }
         >
           <span className={styles.iconWrapper}>
@@ -147,12 +147,12 @@ export default function MobileBottomNavbar() {
           </span>
 
           <span>
-            {locale === "ar" ? "السلة" : "Cart"}
+            {locale === "ar" ? "عربة التسوق" : "Cart"}
           </span>
         </Link>
 
         {/* Shop */}
-        <Link
+        <Link prefetch={false}
           href={`/${locale}/shop`}
           className={styles.action}
           aria-label={

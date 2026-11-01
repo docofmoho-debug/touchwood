@@ -17,13 +17,23 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
+  "https://touchwood.oo0422474.workers.dev",
 ];
 
-app.use(
-  cors()
-);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(
   helmet({
@@ -48,7 +58,25 @@ app.use(
 
 app.use(hpp());
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    message: "Too many requests, please try again later.",
+  },
+});
 
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    message: "Too many upload requests, please try again later.",
+  },
+});
 
 app.use(logger);
 
@@ -58,7 +86,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.use("/api", Router);
+app.use("/api/uploads", uploadLimiter);
+app.use("/api", apiLimiter, Router);
 app.use("/api/demo-reviews", demoReviewRouter);
 
 app.use((req, res) => {
@@ -66,6 +95,7 @@ app.use((req, res) => {
     message: "Route not found",
   });
 });
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

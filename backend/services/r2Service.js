@@ -8,7 +8,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-console.log("=== R2 SERVICE VERSION 2026-09-22 ===");
+
+console.log("=== R2 SERVICE VERSION 2026-09-30 ===");
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,23 +18,8 @@ dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
 
-const createStorageKey = ({ folder, fileName, contentType }) => {
-  const extensionFromName = path.extname(fileName || "").toLowerCase();
-
-  const extensionFromType =
-    contentType === "image/jpeg"
-      ? ".jpg"
-      : contentType === "image/png"
-        ? ".png"
-        : contentType === "image/webp"
-          ? ".webp"
-          : contentType === "image/gif"
-            ? ".gif"
-            : contentType === "image/avif"
-              ? ".avif"
-              : "";
-
-  const extension = extensionFromName || extensionFromType || ".bin";
+const createStorageKey = ({ folder, fileName }) => {
+  const extension = path.extname(fileName || "").toLowerCase() || ".bin";
 
   return `${folder}/${crypto.randomUUID()}${extension}`;
 };
@@ -65,7 +52,11 @@ const getR2Config = () => {
   };
 };
 
-const createR2Client = ({ accountId, accessKeyId, secretAccessKey }) => {
+const createR2Client = ({
+  accountId,
+  accessKeyId,
+  secretAccessKey,
+}) => {
   return new S3Client({
     region: "auto",
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -81,20 +72,12 @@ export const createPresignedUploadUrl = async ({
   fileName,
   contentType,
 }) => {
-  if (!contentType?.startsWith("image/")) {
-    throw new Error("Only image files are allowed");
+  if (!fileName) {
+    throw new Error("File name is required");
   }
 
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-    "image/avif",
-  ];
-
-  if (!allowedTypes.includes(contentType)) {
-    throw new Error("Unsupported image type");
+  if (!contentType) {
+    throw new Error("Content type is required");
   }
 
   const config = getR2Config();
@@ -103,7 +86,6 @@ export const createPresignedUploadUrl = async ({
   const key = createStorageKey({
     folder,
     fileName,
-    contentType,
   });
 
   const command = new PutObjectCommand({

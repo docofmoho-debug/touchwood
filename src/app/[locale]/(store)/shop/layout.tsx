@@ -4,7 +4,7 @@ import Footer from "@/components/layout/Footer";
 import MobileTopNavbar from "@/components/layout/MobileTopNavbar";
 import MobileBottomNavbar from "@/components/layout/MobileBottomNavbar";
 import Hero from "@/components/layout/Hero";
-
+import PhoneFloatingButton from "@/components/phoneicone";
 export default async function ShopLayout({
   children,
   params,
@@ -23,7 +23,7 @@ export default async function ShopLayout({
       <Hero />
 
       <main>{children}</main>
-
+<PhoneFloatingButton locale={locale} />
       <WhatsAppFloatingButton locale={locale} />
 
       <MobileBottomNavbar />

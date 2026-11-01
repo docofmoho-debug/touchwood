@@ -12,7 +12,7 @@ import {
   X,
   Clock3,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./AdminTopbar.module.css";
 import {
@@ -58,7 +58,7 @@ type NotificationItem = {
   } | null;
   product?: {
     _id?: string;
-    name?: string;
+    name?: unknown;
     stock?: number;
     price?: number;
   } | null;
@@ -106,6 +106,46 @@ const getOrderStatusLabel = (
   }
 };
 
+const getLocalizedText = (
+  value: unknown,
+  locale: "ar" | "en"
+) => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    const localizedValue = value as {
+      ar?: unknown;
+      en?: unknown;
+    };
+
+    const preferredValue =
+      locale === "ar"
+        ? localizedValue.ar
+        : localizedValue.en;
+
+    const fallbackValue =
+      locale === "ar"
+        ? localizedValue.en
+        : localizedValue.ar;
+
+    if (typeof preferredValue === "string") {
+      return preferredValue;
+    }
+
+    if (typeof fallbackValue === "string") {
+      return fallbackValue;
+    }
+  }
+
+  return "";
+};
+
 const getLocalizedNotificationContent = (
   notification: NotificationItem,
   locale: "ar" | "en"
@@ -115,8 +155,10 @@ const getLocalizedNotificationContent = (
     notification.order?._id ||
     "";
 
-  const productName =
-    notification.product?.name || "";
+  const productName = getLocalizedText(
+    notification.product?.name,
+    locale
+  );
 
   const userName =
     notification.user?.name || "";
@@ -406,8 +448,41 @@ export default function AdminTopbar({
   const [isLoadingNotifications, setIsLoadingNotifications] =
     useState(false);
 
+  const notificationsRef =
+    useRef<HTMLDivElement>(null);
+
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isNotificationsOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (
+      event: MouseEvent
+    ) => {
+      if (
+        !notificationsRef.current?.contains(
+          event.target as Node
+        )
+      ) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, [isNotificationsOpen]);
 
   const pathSegments = pathname
     .split("/")
@@ -519,6 +594,7 @@ export default function AdminTopbar({
   const handleNotificationClick = async (
     notification: NotificationItem
   ) => {
+    setIsNotificationsOpen(false);
     setSelectedNotification(notification);
 
     if (!notification.read) {
@@ -609,8 +685,10 @@ export default function AdminTopbar({
       notification.order?._id ||
       "";
 
-    const productName =
-      notification.product?.name || "";
+    const productName = getLocalizedText(
+      notification.product?.name,
+      currentLocaleTyped
+    );
 
     const userName =
       notification.user?.name || "";
@@ -1116,6 +1194,7 @@ export default function AdminTopbar({
         </button>
 
         <div
+          ref={notificationsRef}
           className={
             styles.notificationWrapper
           }

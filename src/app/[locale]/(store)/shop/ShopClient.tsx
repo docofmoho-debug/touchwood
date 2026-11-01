@@ -30,6 +30,16 @@ const categories = [
     en: "Chairs",
   },
   {
+  value: "mesh-chairs",
+  ar: "كراسي شبك",
+  en: "Mesh Chairs",
+},
+{
+  value: "leather-chairs",
+  ar: "كراسي جلد",
+  en: "Leather Chairs",
+},
+  {
     value: "office-sofas",
     ar: "انتريهات مكتبية",
     en: "Office Sofas",
@@ -152,6 +162,15 @@ export default function ShopClient() {
     searchParams.get("sort") || "default",
   );
 
+  // Keep filters synchronized with links from the navigation bars.
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+    setCategory(searchParams.get("category") || "all");
+    setSelectedColor(searchParams.get("color") || "all");
+    setCurrentPage(Number(searchParams.get("page")) || 1);
+    setSortBy(searchParams.get("sort") || "default");
+  }, [searchParams]);
+
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -201,20 +220,84 @@ export default function ShopClient() {
         locale,
       ).toLowerCase();
 
-      const productCategory = String(
-        product.category || "",
-      )
+      const productCategory = String(product.category || "")
         .toLowerCase()
         .trim();
 
+      const productDescription = getLocalizedText(
+        product.description,
+        locale,
+      ).toLowerCase();
+
+      const productSlug = String(product.slug || "").toLowerCase();
+      const productSerialNumber = String(
+        product.serialNumber || "",
+      ).toLowerCase();
+
+      const productSpecifications = Array.isArray(product.specifications)
+        ? product.specifications
+            .flatMap((specification) => [
+              getLocalizedText(specification.label, locale),
+              getLocalizedText(specification.value, locale),
+            ])
+            .join(" ")
+            .toLowerCase()
+        : "";
+
+      const searchableProductDetails = [
+        productName,
+        productDescription,
+        productSlug,
+        productSerialNumber,
+        productCategory,
+        productSpecifications,
+      ].join(" ").toLowerCase();
+
       const matchesSearch =
         !normalizedSearch ||
-        productName.includes(normalizedSearch) ||
-        productCategory.includes(normalizedSearch);
+        searchableProductDetails.includes(normalizedSearch);
+
+      const isChairCategory =
+        productCategory.includes("chair") ||
+        productCategory.includes("كرسي") ||
+        productCategory.includes("كراسي");
+
+      const meshKeywords = [
+        "شبك",
+        "شبكي",
+        "شبكة",
+        "mesh",
+        "net back",
+        "mesh back",
+      ];
+
+      const leatherKeywords = [
+        "جلد",
+        "جلدي",
+        "leather",
+        "leatherette",
+        "pu leather",
+      ];
+
+      const matchesMeshChair =
+        isChairCategory &&
+        meshKeywords.some((keyword) =>
+          searchableProductDetails.includes(keyword),
+        );
+
+      const matchesLeatherChair =
+        isChairCategory &&
+        leatherKeywords.some((keyword) =>
+          searchableProductDetails.includes(keyword),
+        );
 
       const matchesCategory =
         category === "all" ||
-        productCategory === category.toLowerCase().trim();
+        (category === "chairs" && isChairCategory) ||
+        (category === "mesh-chairs" && matchesMeshChair) ||
+        (category === "leather-chairs" && matchesLeatherChair) ||
+        (!["chairs", "mesh-chairs", "leather-chairs"].includes(category) &&
+          productCategory === category.toLowerCase().trim());
 
       const productPrice = Number(product.price) || 0;
 
@@ -390,7 +473,7 @@ export default function ShopClient() {
               : "Breadcrumb"
           }
         >
-          <Link href={`/${locale}`}>
+          <Link prefetch={false} href={`/${locale}`}>
             {breadcrumbHome}
           </Link>
 
@@ -734,9 +817,9 @@ export default function ShopClient() {
                       }
                     >
                       {isArabic ? (
-                        <FiChevronRight />
+                      <FiChevronLeft />
                       ) : (
-                        <FiChevronLeft />
+                          <FiChevronRight />
                       )}
                     </button>
 
@@ -777,9 +860,9 @@ export default function ShopClient() {
                       }
                     >
                       {isArabic ? (
-                        <FiChevronLeft />
+                       <FiChevronRight />
                       ) : (
-                        <FiChevronRight />
+                         <FiChevronLeft />
                       )}
                     </button>
                   </nav>

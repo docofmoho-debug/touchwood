@@ -1,5 +1,5 @@
 "use client";
-
+import PhoneFloatingButton from "@/components/phoneicone";
 import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 import { useParams, usePathname } from "next/navigation";
 import SecondHero from "@/components/layout/SecondHero";
@@ -47,7 +47,7 @@ export default function SiteLayout({
           <FeaturedProducts />
 
           {children}
-
+<PhoneFloatingButton locale={locale} />
           <WhatsAppFloatingButton locale={locale} />
 
           <MobileBottomNavbar />

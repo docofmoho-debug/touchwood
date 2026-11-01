@@ -99,7 +99,7 @@ export default function Hero() {
       {/* نسخة الكمبيوتر */}
       <div className={styles.desktopCategories}>
         {categories.map((category) => (
-          <Link
+          <Link prefetch={false}
             key={category.id}
             href={getShopUrl(category.id)}
             className={styles.category}
@@ -139,7 +139,7 @@ export default function Hero() {
         >
           {categories.map((category) => (
             <SwiperSlide key={category.id}>
-              <Link
+              <Link prefetch={false}
                 href={getShopUrl(category.id)}
                 className={styles.category}
                 onClick={(event) =>

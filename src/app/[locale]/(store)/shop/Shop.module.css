@@ -389,7 +389,7 @@
 }
 
 .pagination button:hover:not(:disabled) {
-  border-color: #238a37;
+ background-color: #238a37;
   color: white;
 }
 

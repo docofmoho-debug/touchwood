@@ -308,8 +308,8 @@ const getPaymentLabel = (
       "Cash On Delivery",
     ],
     "Vodafone Cash": [
-      "فودافون كاش",
-      "Vodafone Cash",
+      "فودافون كاش او انستاباي على الرقم 01142447767",
+      "Vodafone Cash or instapay on 01142447767",
     ],
   };
 

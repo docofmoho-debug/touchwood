@@ -85,7 +85,7 @@ export default function Footer() {
   const socialLinks = [
     {
       name: "Facebook",
-      href: "https://facebook.com",
+      href: "https://www.facebook.com/profile.php?id=61566761378486",
       icon: <FaFacebookF />,
     },
     {
@@ -110,7 +110,7 @@ export default function Footer() {
       <div className={styles.mainFooter}>
         <div className={styles.container}>
           <div className={styles.brandColumn}>
-            <Link
+            <Link prefetch={false}
               href={`/${locale}`}
               className={styles.brandLogo}
             >
@@ -141,13 +141,13 @@ export default function Footer() {
               </a>
 
               <a
-                href="mailto:info@example.com"
+                href="Touchwoodfurniture@gmail.com"
                 className={styles.contactItem}
               >
                 <span className={styles.contactIcon}>
                   <FiMail />
                 </span>
-                <span>info@example.com</span>
+                <span>Touchwoodfurniture@gmail.com</span>
               </a>
 
               <div className={styles.contactItem}>
@@ -165,7 +165,7 @@ export default function Footer() {
 
             <div className={styles.socialLinks}>
               {socialLinks.map((social) => (
-                <a
+                <a 
                   key={social.name}
                   href={social.href}
                   target="_blank"
@@ -207,7 +207,7 @@ export default function Footer() {
 
             <div className={styles.linksList}>
               {quickLinks.map((link) => (
-                <Link
+                <Link prefetch={false}
                   key={link.href}
                   href={link.href}
                   className={styles.footerLink}
@@ -240,14 +240,15 @@ export default function Footer() {
           : "Designed & Developed by" }
       </span>
 
-      <Link
+      <Link prefetch={false}
         href="https://wa.me/201018059131"
         target="_blank"
         rel="noopener noreferrer"
         className={styles.hololLogo}
         aria-label={isArabic ? "زيارة حلول" : "Visit Holol"}
       >
-        <Image
+        <Image 
+
           src="/logo/holol.png"
           alt="حلول"
           width={150}

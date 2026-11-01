@@ -138,7 +138,7 @@ export default function MobileTopNavbar() {
               ? "كراسي شبك"
               : "Mesh Chairs",
           href:
-            `/${locale}/shop?category=chairs`,
+            `/${locale}/shop?category=mesh-chairs`,
         },
 
         {
@@ -147,7 +147,7 @@ export default function MobileTopNavbar() {
               ? "كراسي جلد"
               : "Leather Chairs",
           href:
-            `/${locale}/shop?category=chairs`,
+            `/${locale}/shop?category=leather-chairs`,
         },
 
         {
@@ -156,7 +156,7 @@ export default function MobileTopNavbar() {
               ? "كراسي بار"
               : "Bar Chairs",
           href:
-            `/${locale}/shop?category=chairs`,
+            `/${locale}/shop?category=bar-chairs`,
         },
 
         {
@@ -165,7 +165,7 @@ export default function MobileTopNavbar() {
               ? "كراسي المعمل"
               : "Laboratory Chairs",
           href:
-            `/${locale}/shop?category=chairs`,
+            `/${locale}/shop?category=laboratory-chairs`,
         },
       ],
     },
@@ -274,7 +274,7 @@ export default function MobileTopNavbar() {
           </a>
 
           {/* Account button */}
-          <Link
+          <Link prefetch={false}
             href={accountHref}
             className={styles.userButton}
             aria-label={

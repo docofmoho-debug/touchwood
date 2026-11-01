@@ -19,7 +19,22 @@ export const categoryTranslations: Record<
     ar: "أرائك مكتبية",
     en: "Office Sofas",
   },
-
+  "leather-chairs": {
+    ar: "كراسي جلد",
+    en: "leather-chairs",
+  },
+"mesh-chairs": {
+    ar: "كراسي شبك",
+    en: "mesh-chairs",
+  },
+  "bar-chairs": {
+    ar: "كراسي بار",
+    en: "bar-chairs",
+  },
+  "laboratory-chairs": {
+    ar: "كراسي معمل",
+    en: "laboratory-chairs",
+  },
   desks: {
     ar: "مكاتب",
     en: "Desks",

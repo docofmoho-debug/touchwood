@@ -41,7 +41,7 @@ export default function SecondHero() {
           {heroImages.map((image, index) => (
             <SwiperSlide key={index}>
               <div className="secondHeroSlide">
-                <Link
+                <Link prefetch={false}
                   href={`/${locale}/shop`}
                   className="secondHeroLink"
                   aria-label={

@@ -45,6 +45,61 @@ function getProductName(
   );
 }
 
+function getColorLabel(
+  item: CartItem,
+  locale: string
+): string {
+  const details = item.selectedColorDetails;
+
+  if (!details) {
+    return item.selectedColor || "";
+  }
+
+  const getLocalizedText = (
+    value: unknown
+  ): string => {
+    if (typeof value === "string") {
+      return value.trim();
+    }
+
+    if (value && typeof value === "object") {
+      const localized = value as {
+        ar?: unknown;
+        en?: unknown;
+      };
+
+      const preferred =
+        locale === "ar"
+          ? localized.ar
+          : localized.en;
+
+      const fallback =
+        locale === "ar"
+          ? localized.en
+          : localized.ar;
+
+      if (typeof preferred === "string" && preferred.trim()) {
+        return preferred.trim();
+      }
+
+      if (typeof fallback === "string" && fallback.trim()) {
+        return fallback.trim();
+      }
+    }
+
+    return "";
+  };
+
+  return (
+    getLocalizedText(details.name) ||
+    getLocalizedText(details.label) ||
+    details.value ||
+    details.id ||
+    item.selectedColor ||
+    ""
+  );
+}
+
 function getProductImage(
   item: CartItem
 ) {
@@ -566,7 +621,10 @@ export default function CheckoutPage() {
             quantity:
               item.quantity,
 
+            // يُرسل معرّف اللون الذي اختاره العميل؛
+            // ويستخدمه الخادم للتحقق من اللون وحفظ تفاصيله في الطلب.
             colorId:
+              item.selectedColorDetails?.id ||
               item.selectedColor ||
               null,
           })),
@@ -984,7 +1042,7 @@ export default function CheckoutPage() {
                 />
 
                 <span>
-                  Vodafone Cash
+                 فودافون كاش او انستاباي على الرقم 01142447767
                 </span>
               </label>
             </div>
@@ -1034,7 +1092,7 @@ export default function CheckoutPage() {
               }
             >
               {isArabic
-                ? "سيتم التحقق من البيانات والأسعار والمخزون على الخادم قبل إنشاء الطلب."
+                ? "سيتم التحقق من البيانات والأسعار والمخزون على الموقع قبل إنشاء الطلب."
                 : "Your information, prices, and stock are verified on the server before your order is created."}
             </p>
           </section>
@@ -1127,9 +1185,8 @@ export default function CheckoutPage() {
 
                         {item.selectedColor && (
                           <span>
-                            {isArabic
-                              ? "لون محدد"
-                              : "Selected color"}
+                            {isArabic ? "اللون :" : "Color :"}{" "}
+                            {getColorLabel(item, locale)}
                           </span>
                         )}
                       </div>

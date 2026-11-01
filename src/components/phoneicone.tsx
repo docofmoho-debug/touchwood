@@ -1,0 +1,36 @@
+
+"use client";
+
+import styles from "./PhoneFloatingButton.module.css";
+
+type PhoneFloatingButtonProps = {
+  locale: string;
+};
+
+export default function PhoneFloatingButton({
+  locale,
+}: PhoneFloatingButtonProps) {
+  const isArabic = locale === "ar";
+
+  return (
+    <a
+      href="tel:+201142447767"
+      className={`${styles.button} ${
+        isArabic ? styles.ltr : styles.rtl
+      }`}
+      aria-label={
+        isArabic
+          ? "اتصل بنا هاتفيًا"
+          : "Call us"
+      }
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className={styles.icon}
+      >
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z" />
+      </svg>
+    </a>
+  );
+}

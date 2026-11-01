@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -73,6 +74,31 @@ function normalizeProducts(response: unknown): Product[] {
   return [];
 }
 
+function getProductName(
+  name: Product["name"],
+  locale: "ar" | "en",
+): string {
+  if (typeof name === "string") {
+    return name;
+  }
+
+  if (!name || typeof name !== "object") {
+    return "";
+  }
+
+  return name[locale] || name.ar || name.en || "";
+}
+
+function isChairProduct(product: Product): boolean {
+  const nameAr = getProductName(product.name, "ar");
+  const nameEn = getProductName(product.name, "en");
+
+  return (
+    /كرسي|كراسي/i.test(nameAr) ||
+    /\bchairs?\b/i.test(nameEn)
+  );
+}
+
 export default function CategoryProductSections() {
   const params = useParams();
 
@@ -89,9 +115,7 @@ export default function CategoryProductSections() {
 
   const [error, setError] = useState<string | null>(null);
 
-  const categories = useMemo(() => {
-    return categoryConfigs;
-  }, []);
+  const categories = useMemo(() => categoryConfigs, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,18 +127,35 @@ export default function CategoryProductSections() {
 
         const results = await Promise.all(
           categories.map(async (category) => {
-            const response = await getProducts({
-              category: category.slug,
-              active: true,
-              limit: 7,
-              page: 1,
-            });
+            let products: Product[] = [];
 
-            const products = normalizeProducts(response);
+            if (category.slug === "chairs") {
+              // جلب المنتجات دون تقييدها بكاتيجوري الكراسي.
+              // إذا كان الـ API يدعم البحث بالاسم، فالأفضل
+              // استخدامه أو جلب الصفحات بالتتابع.
+              const response = await getProducts({
+                active: true,
+                limit: 1000,
+                page: 1,
+              });
+
+              products = normalizeProducts(response)
+                .filter(isChairProduct)
+                .slice(0, 7);
+            } else {
+              const response = await getProducts({
+                category: category.slug,
+                active: true,
+                limit: 7,
+                page: 1,
+              });
+
+              products = normalizeProducts(response).slice(0, 7);
+            }
 
             return {
               category: category.slug,
-              products: products.slice(0, 7),
+              products,
             };
           }),
         );
@@ -158,7 +199,9 @@ export default function CategoryProductSections() {
     return (
       <section className={styles.wrapper}>
         <div className={styles.statusMessage}>
-          {isArabic ? "جاري تحميل المنتجات..." : "Loading products..."}
+          {isArabic
+            ? "جاري تحميل المنتجات..."
+            : "Loading products..."}
         </div>
       </section>
     );
@@ -178,17 +221,21 @@ export default function CategoryProductSections() {
       dir={isArabic ? "rtl" : "ltr"}
     >
       {categories.map((category) => {
-        const products = productsByCategory[category.slug] || [];
+        const products =
+          productsByCategory[category.slug] || [];
 
         if (products.length === 0) {
           return null;
         }
 
-        const categoryTitle = isArabic ? category.ar : category.en;
+        const categoryTitle = isArabic
+          ? category.ar
+          : category.en;
 
-        const shopUrl = `/${locale}/shop?category=${encodeURIComponent(
-          category.slug,
-        )}`;
+        const shopUrl =
+          `/${locale}/shop?category=${encodeURIComponent(
+            category.slug,
+          )}`;
 
         return (
           <section
@@ -201,6 +248,7 @@ export default function CategoryProductSections() {
               </h2>
 
               <Link
+                prefetch={false}
                 href={shopUrl}
                 className={styles.viewAllLink}
               >
@@ -221,6 +269,7 @@ export default function CategoryProductSections() {
               ))}
 
               <Link
+                prefetch={false}
                 href={shopUrl}
                 className={styles.moreCard}
               >

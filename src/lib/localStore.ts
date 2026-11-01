@@ -1,7 +1,16 @@
-
 export type LocalizedText = {
   ar?: string;
   en?: string;
+};
+
+export type LocalProductColor = {
+  _id?: string;
+  name?: LocalizedText | string;
+  label?: LocalizedText | string;
+  color?: string;
+  value?: string;
+  hex?: string;
+  code?: string;
 };
 
 export type LocalProduct = {
@@ -15,6 +24,7 @@ export type LocalProduct = {
   stock?: number;
   rating?: number;
   reviewsCount?: number;
+  colors?: LocalProductColor[];
   media?: Array<{
     type?: "image" | "video";
     url: string;
@@ -24,10 +34,28 @@ export type LocalProduct = {
   }>;
 };
 
+export type CartColorDetails = {
+  id: string;
+  name?: LocalizedText | string;
+  label?: LocalizedText | string;
+  value: string;
+};
+
 export type CartItem = {
   product: LocalProduct;
   quantity: number;
+
+  /**
+   * معرف اللون المختار. نحتفظ به في هذا الحقل للتوافق
+   * مع صفحات السلة الحالية التي تستخدم selectedColor.
+   */
   selectedColor?: string | null;
+
+  /**
+   * تفاصيل اللون المختار حتى يمكن عرض الاسم والقيمة
+   * في السلة وإرسالها لاحقًا إلى الطلب.
+   */
+  selectedColorDetails?: CartColorDetails | null;
 };
 
 export const WISHLIST_KEY = "touchwood_wishlist";
@@ -46,10 +74,7 @@ function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
 
-function readStorage<T>(
-  key: string,
-  fallback: T
-): T {
+function readStorage<T>(key: string, fallback: T): T {
   if (!isBrowser()) {
     return fallback;
   }
@@ -67,10 +92,7 @@ function readStorage<T>(
   }
 }
 
-function writeStorage<T>(
-  key: string,
-  value: T
-): void {
+function writeStorage<T>(key: string, value: T): void {
   if (!isBrowser()) {
     return;
   }
@@ -100,6 +122,58 @@ function isCartItem(value: unknown): value is CartItem {
     typeof item.product._id === "string" &&
     typeof item.quantity === "number"
   );
+}
+
+function getColorId(
+  color: LocalProductColor,
+  index: number
+): string {
+  if (typeof color._id === "string" && color._id.trim()) {
+    return color._id;
+  }
+
+  const value =
+    color.hex ||
+    color.color ||
+    color.value ||
+    color.code ||
+    "";
+
+  return `${value}-${index}`;
+}
+
+function getColorDetails(
+  product: LocalProduct,
+  selectedColor: string | null
+): CartColorDetails | null {
+  if (!selectedColor || !Array.isArray(product.colors)) {
+    return null;
+  }
+
+  const index = product.colors.findIndex(
+    (color, colorIndex) =>
+      getColorId(color, colorIndex) === selectedColor
+  );
+
+  if (index < 0) {
+    return null;
+  }
+
+  const color = product.colors[index];
+
+  const value =
+    color.hex ||
+    color.color ||
+    color.value ||
+    color.code ||
+    "";
+
+  return {
+    id: selectedColor,
+    ...(color.name !== undefined ? { name: color.name } : {}),
+    ...(color.label !== undefined ? { label: color.label } : {}),
+    value,
+  };
 }
 
 export function getStoredIds(
@@ -133,6 +207,7 @@ export function hasStoredId(
 ): boolean {
   return getStoredIds(key).includes(productId);
 }
+
 export function getStoredIdCount(
   key: typeof WISHLIST_KEY | typeof COMPARE_KEY
 ): number {
@@ -146,6 +221,7 @@ export function getWishlistCount(): number {
 export function getCompareCount(): number {
   return getStoredIdCount(COMPARE_KEY);
 }
+
 export function toggleStoredId(
   key: typeof WISHLIST_KEY | typeof COMPARE_KEY,
   productId: string
@@ -171,15 +247,19 @@ export function getCartItems(): CartItem[] {
   }
 
   /*
-   * الصيغة الجديدة:
+   * الصيغة الحالية:
    * [
    *   {
    *     product: {...},
-   *     quantity: 1
+   *     quantity: 1,
+   *     selectedColor: "...",
+   *     selectedColorDetails: { id, name, label, value }
    *   }
    * ]
+   *
+   * العناصر المحفوظة قبل إضافة selectedColorDetails تظل
+   * صالحة؛ لأن هذا الحقل اختياري.
    */
-
   if (stored.every(isCartItem)) {
     return stored;
   }
@@ -190,13 +270,10 @@ export function getCartItems(): CartItem[] {
    * من المعرف وحده، لذلك نتجاهل الصيغة القديمة
    * بدلًا من إنشاء بيانات ناقصة أو غير صحيحة.
    */
-
   return [];
 }
 
-export function setCartItems(
-  items: CartItem[]
-): void {
+export function setCartItems(items: CartItem[]): void {
   const normalizedItems = items
     .filter((item) => {
       return (
@@ -220,26 +297,26 @@ export function addToCart(
   selectedColor: string | null = null
 ): CartItem[] {
   const currentItems = getCartItems();
+  const selectedColorDetails = getColorDetails(product, selectedColor);
 
   const existingIndex = currentItems.findIndex(
     (item) =>
       item.product._id === product._id &&
-      item.selectedColor === selectedColor
+      (item.selectedColor ?? null) === selectedColor
   );
 
-  const safeQuantity = Math.max(
-    1,
-    Math.floor(quantity)
-  );
+  const safeQuantity = Math.max(1, Math.floor(quantity));
 
   if (existingIndex >= 0) {
     const nextItems = [...currentItems];
 
     nextItems[existingIndex] = {
       ...nextItems[existingIndex],
+      // تحديث تفاصيل اللون أيضًا حتى لا تبقى بيانات قديمة.
+      selectedColor,
+      selectedColorDetails,
       quantity:
-        nextItems[existingIndex].quantity +
-        safeQuantity,
+        nextItems[existingIndex].quantity + safeQuantity,
     };
 
     setCartItems(nextItems);
@@ -253,6 +330,7 @@ export function addToCart(
       product,
       quantity: safeQuantity,
       selectedColor,
+      selectedColorDetails,
     },
   ];
 
@@ -267,14 +345,13 @@ export function updateCartQuantity(
   selectedColor: string | null = null
 ): CartItem[] {
   const safeQuantity = Math.floor(quantity);
-
   const currentItems = getCartItems();
 
   const nextItems = currentItems
     .map((item) => {
       if (
         item.product._id === productId &&
-        item.selectedColor === selectedColor
+        (item.selectedColor ?? null) === selectedColor
       ) {
         return {
           ...item,
@@ -300,7 +377,7 @@ export function removeFromCart(
   const nextItems = currentItems.filter((item) => {
     return !(
       item.product._id === productId &&
-      item.selectedColor === selectedColor
+      (item.selectedColor ?? null) === selectedColor
     );
   });
 

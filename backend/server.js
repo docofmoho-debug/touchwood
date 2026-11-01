@@ -17,7 +17,7 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 const allowedOrigins = [
-  "https://touchwood.oo0422474.workers.dev",
+  "https://touchwood.oo0422474.workers.dev","https://touchwoodfurniture.online"
 ];
 
 const corsOptions = {

@@ -140,7 +140,7 @@ export const createProduct = async (req, res) => {
 
     const {
       name,
-      description,
+      description,warrantyDuration,
       slug,
       category,
       price,
@@ -281,7 +281,10 @@ export const createProduct = async (req, res) => {
         oldPrice === ""
           ? null
           : Number(oldPrice),
-
+warrantyDuration: {
+  ar: warrantyDuration?.ar?.trim?.() || "",
+  en: warrantyDuration?.en?.trim?.() || "",
+},
       serialNumber:
         serialNumber !== undefined &&
         serialNumber !== null
@@ -466,7 +469,7 @@ export const updateProduct = async (req, res) => {
       slug,
       category,
       price,
-      oldPrice,
+      oldPrice,warrantyDuration,
       serialNumber,
       media,
       colors,
@@ -563,7 +566,12 @@ export const updateProduct = async (req, res) => {
       updateData.slug =
         slug.trim().toLowerCase();
     }
-
+if (warrantyDuration !== undefined) {
+  updateData.warrantyDuration = {
+    ar: warrantyDuration?.ar?.trim?.() || "",
+    en: warrantyDuration?.en?.trim?.() || "",
+  };
+}
     if (category !== undefined) {
       updateData.category =
         category.trim().toLowerCase();

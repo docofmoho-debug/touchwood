@@ -33,6 +33,7 @@ export type ProductSpecification = {
 export type Product = {
   _id: string;
   name: Localized;
+  warrantyDuration?: Localized;
   description?: Localized;
   slug: string;
   category: string;

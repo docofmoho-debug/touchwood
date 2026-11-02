@@ -1,3 +1,4 @@
+
 "use client";
 
 import { addToCart } from "@/lib/localStore";
@@ -11,6 +12,7 @@ import {
   FiShuffle,
   FiCheck,
   FiLoader,
+  FiShield,
 } from "react-icons/fi";
 
 import styles from "./ProductCard.module.css";
@@ -29,52 +31,42 @@ const categories: Record<string, Localized> = {
     ar: "مكاتب وطاولات كمبيوتر",
     en: "Computer Desks",
   },
-
   chairs: {
     ar: "كراسي",
     en: "Chairs",
   },
-
   "leather-chairs": {
     ar: "كراسي جلد",
     en: "Leather Chairs",
   },
-
   "mesh-chairs": {
     ar: "كراسي شبك",
     en: "Mesh Chairs",
   },
-
   "bar-chairs": {
     ar: "كراسي بار",
     en: "Bar Chairs",
   },
-
   "laboratory-chairs": {
     ar: "كراسي معمل",
     en: "Laboratory Chairs",
   },
-
   "office-sofas": {
     ar: "انتريهات مكتبية",
     en: "Office Sofas",
   },
-
   "work-cells": {
     ar: "خلايا العمل",
     en: "Work Cells",
   },
-
   "reception-counters": {
     ar: "كاونتر استقبال",
     en: "Reception Counters",
   },
-
   "meeting-tables": {
     ar: "ترابيزات اجتماعات",
     en: "Meeting Tables",
   },
-
   "office-accessories": {
     ar: "إكسسوارات الأثاث المكتبي",
     en: "Office Accessories",
@@ -114,29 +106,20 @@ function getStoredIds(key: string): string[] {
   }
 }
 
-function saveStoredIds(
-  key: string,
-  ids: string[]
-) {
+function saveStoredIds(key: string, ids: string[]) {
   if (typeof window === "undefined") {
     return;
   }
 
-  localStorage.setItem(
-    key,
-    JSON.stringify(ids)
-  );
+  localStorage.setItem(key, JSON.stringify(ids));
 
   window.dispatchEvent(
-    new CustomEvent(
-      "touchwood-local-list-change",
-      {
-        detail: {
-          key,
-          ids,
-        },
-      }
-    )
+    new CustomEvent("touchwood-local-list-change", {
+      detail: {
+        key,
+        ids,
+      },
+    }),
   );
 }
 
@@ -151,21 +134,12 @@ export default function ProductCard({
   const locale =
     segments[0] === "en" ? "en" : "ar";
 
-  const [isFavorite, setIsFavorite] =
-    useState(false);
-
-  const [isCompared, setIsCompared] =
-    useState(false);
-
-  const [message, setMessage] =
-    useState("");
-
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isCompared, setIsCompared] = useState(false);
+  const [message, setMessage] = useState("");
   const [messageType, setMessageType] =
     useState<MessageType>("");
-
-  const [portalReady, setPortalReady] =
-    useState(false);
-
+  const [portalReady, setPortalReady] = useState(false);
   const [loadingAction, setLoadingAction] =
     useState<LoadingAction>("");
 
@@ -175,58 +149,41 @@ export default function ProductCard({
 
   useEffect(() => {
     setIsFavorite(
-      getStoredIds(WISHLIST_KEY).includes(
-        product._id
-      )
+      getStoredIds(WISHLIST_KEY).includes(product._id),
     );
 
     setIsCompared(
-      getStoredIds(COMPARE_KEY).includes(
-        product._id
-      )
+      getStoredIds(COMPARE_KEY).includes(product._id),
     );
 
-    const handleLocalListChange = (
-      event: Event
-    ) => {
-      const customEvent =
-        event as CustomEvent<{
-          key: string;
-          ids: string[];
-        }>;
+    const handleLocalListChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        key: string;
+        ids: string[];
+      }>;
 
-      if (
-        customEvent.detail?.key ===
-        WISHLIST_KEY
-      ) {
+      if (customEvent.detail?.key === WISHLIST_KEY) {
         setIsFavorite(
-          customEvent.detail.ids.includes(
-            product._id
-          )
+          customEvent.detail.ids.includes(product._id),
         );
       }
 
-      if (
-        customEvent.detail?.key ===
-        COMPARE_KEY
-      ) {
+      if (customEvent.detail?.key === COMPARE_KEY) {
         setIsCompared(
-          customEvent.detail.ids.includes(
-            product._id
-          )
+          customEvent.detail.ids.includes(product._id),
         );
       }
     };
 
     window.addEventListener(
       "touchwood-local-list-change",
-      handleLocalListChange
+      handleLocalListChange,
     );
 
     return () => {
       window.removeEventListener(
         "touchwood-local-list-change",
-        handleLocalListChange
+        handleLocalListChange,
       );
     };
   }, [product._id]);
@@ -236,11 +193,10 @@ export default function ProductCard({
       return;
     }
 
-    const timeoutId =
-      window.setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-      }, 3000);
+    const timeoutId = window.setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 3000);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -253,8 +209,13 @@ export default function ProductCard({
     product.name?.en ||
     "منتج";
 
-  const category =
-    categories[product.category];
+  const warrantyText =
+    product.warrantyDuration?.[locale]?.trim() ||
+    product.warrantyDuration?.ar?.trim() ||
+    product.warrantyDuration?.en?.trim() ||
+    "";
+
+  const category = categories[product.category];
 
   const categoryName =
     category?.[locale] ||
@@ -266,44 +227,30 @@ export default function ProductCard({
 
   const primaryImage = useMemo(() => {
     return (
-      product.media?.find(
-        (item) => item.isPrimary
-      ) ||
-      product.media?.find(
-        (item) => item.type === "image"
-      ) ||
+      product.media?.find((item) => item.isPrimary) ||
+      product.media?.find((item) => item.type === "image") ||
       product.media?.[0]
     );
   }, [product.media]);
 
-  const oldPrice =
-    Number(product.oldPrice) || 0;
-
-  const currentPrice =
-    Number(product.price) || 0;
+  const oldPrice = Number(product.oldPrice) || 0;
+  const currentPrice = Number(product.price) || 0;
 
   const discount =
     oldPrice > currentPrice
       ? Math.round(
-          ((oldPrice - currentPrice) /
-            oldPrice) *
-            100
+          ((oldPrice - currentPrice) / oldPrice) * 100,
         )
       : 0;
 
-  const formattedPrice =
-    currentPrice.toLocaleString(
-      locale === "ar"
-        ? "ar-EG"
-        : "en-US"
-    );
+  const formattedPrice = currentPrice.toLocaleString(
+    locale === "ar" ? "ar-EG" : "en-US",
+  );
 
   const formattedOldPrice =
     oldPrice > currentPrice
       ? oldPrice.toLocaleString(
-          locale === "ar"
-            ? "ar-EG"
-            : "en-US"
+          locale === "ar" ? "ar-EG" : "en-US",
         )
       : null;
 
@@ -339,7 +286,7 @@ export default function ProductCard({
             : "Product added to wishlist"
           : locale === "ar"
             ? "تمت إزالة المنتج من المفضلة"
-            : "Product removed from wishlist"
+            : "Product removed from wishlist",
       );
     } finally {
       setLoadingAction("");
@@ -357,7 +304,9 @@ export default function ProductCard({
       const current = getStoredIds(COMPARE_KEY);
 
       if (current.includes(product._id)) {
-        const next = current.filter((id) => id !== product._id);
+        const next = current.filter(
+          (id) => id !== product._id,
+        );
 
         saveStoredIds(COMPARE_KEY, next);
         setIsCompared(false);
@@ -365,7 +314,7 @@ export default function ProductCard({
         setMessage(
           locale === "ar"
             ? "تمت إزالة المنتج من المقارنة"
-            : "Product removed from compare"
+            : "Product removed from compare",
         );
 
         return;
@@ -377,7 +326,7 @@ export default function ProductCard({
         setMessage(
           locale === "ar"
             ? "يمكنك مقارنة 4 منتجات فقط"
-            : "You can compare up to 4 products only"
+            : "You can compare up to 4 products only",
         );
 
         return;
@@ -391,7 +340,7 @@ export default function ProductCard({
       setMessage(
         locale === "ar"
           ? "تمت إضافة المنتج إلى المقارنة"
-          : "Product added to compare"
+          : "Product added to compare",
       );
     } finally {
       setLoadingAction("");
@@ -405,23 +354,21 @@ export default function ProductCard({
       ? product.colors
       : [];
 
-    // إذا كان للمنتج أكثر من لون، انتقل إلى صفحة التفاصيل
-    // حتى يختار العميل اللون بنفسه.
     if (productColors.length > 1) {
       window.location.assign(productHref);
       return;
     }
 
-    // إذا كان له لون واحد، أضفه إلى السلة باللون الوحيد تلقائيًا.
-    // إذا لم يكن له ألوان، أضفه دون لون.
     const onlyColor = productColors[0];
     let selectedColorId: string | null = null;
 
     if (onlyColor) {
-      if (typeof onlyColor._id === "string" && onlyColor._id.trim()) {
+      if (
+        typeof onlyColor._id === "string" &&
+        onlyColor._id.trim()
+      ) {
         selectedColorId = onlyColor._id;
       } else {
-        // يجب أن تتطابق هذه الصيغة مع getColorId في localStore.
         const colorValue =
           onlyColor.hex ||
           onlyColor.color ||
@@ -444,7 +391,7 @@ export default function ProductCard({
       setMessage(
         locale === "ar"
           ? "تمت إضافة المنتج إلى العربة"
-          : "Product added to cart"
+          : "Product added to cart",
       );
     } finally {
       setLoadingAction("");
@@ -460,8 +407,7 @@ export default function ProductCard({
             className={`${styles.message} ${
               messageType === "cart"
                 ? styles.messageCart
-                : messageType ===
-                    "favorite"
+                : messageType === "favorite"
                   ? styles.messageFavorite
                   : styles.messageCompare
             }`}
@@ -470,7 +416,7 @@ export default function ProductCard({
           >
             {message}
           </p>,
-          document.body
+          document.body,
         )
       : null;
 
@@ -478,35 +424,19 @@ export default function ProductCard({
     <>
       {messagePortal}
 
-      <article
-        className={styles.card}
-      >
-        <div
-          className={
-            styles.imageContainer
-          }
-        >
+      <article className={styles.card}>
+        <div className={styles.imageContainer}>
           {discount > 0 && (
-            <div
-              className={
-                styles.discountBadge
-              }
-            >
+            <div className={styles.discountBadge}>
               {discount}%-
             </div>
           )}
 
-          <div
-            className={
-              styles.topActions
-            }
-          >
+          <div className={styles.topActions}>
             <button
               type="button"
               className={`${styles.actionButton} ${
-                isFavorite
-                  ? styles.actionActive
-                  : ""
+                isFavorite ? styles.actionActive : ""
               }`}
               onClick={toggleWishlist}
               disabled={Boolean(loadingAction)}
@@ -522,9 +452,7 @@ export default function ProductCard({
               ) : (
                 <FiHeart
                   className={
-                    isFavorite
-                      ? styles.filledIcon
-                      : ""
+                    isFavorite ? styles.filledIcon : ""
                   }
                 />
               )}
@@ -533,9 +461,7 @@ export default function ProductCard({
             <button
               type="button"
               className={`${styles.actionButton} ${
-                isCompared
-                  ? styles.actionActive
-                  : ""
+                isCompared ? styles.actionActive : ""
               }`}
               onClick={toggleCompare}
               disabled={Boolean(loadingAction)}
@@ -558,32 +484,23 @@ export default function ProductCard({
 
           <a
             href={productHref}
-            className={
-              styles.imageLink
-            }
+            className={styles.imageLink}
             onClick={(event) => {
               event.preventDefault();
-
-              window.location.assign(
-                productHref
-              );
+              window.location.assign(productHref);
             }}
           >
             {primaryImage?.url ? (
               <img
                 src={primaryImage.url}
                 alt={
-                  primaryImage.alt?.[
-                    locale
-                  ] ||
+                  primaryImage.alt?.[locale] ||
                   productName
                 }
                 className={styles.image}
               />
             ) : (
-              <div
-                className={styles.noImage}
-              >
+              <div className={styles.noImage}>
                 <span>
                   {locale === "ar"
                     ? "لا توجد صورة"
@@ -594,9 +511,7 @@ export default function ProductCard({
           </a>
         </div>
 
-        <div
-          className={styles.content}
-        >
+        <div className={styles.content}>
           <a
             href={`/${locale}/category/${product.category}`}
             className={styles.category}
@@ -606,69 +521,63 @@ export default function ProductCard({
 
           <a
             href={productHref}
-            className={
-              styles.productName
-            }
+            className={styles.productName}
             title={productName}
           >
             {productName}
           </a>
 
-          <div
-            className={styles.prices}
-          >
-            <span
-              className={
-                styles.currentPrice
-              }
-            >
+          {warrantyText && (
+            <div className={styles.warrantyBadge}>
+              <FiShield />
+              <span>
+                {locale === "ar" ? "الضمان:" : "Warranty:"}{" "}
+                {warrantyText}
+              </span>
+            </div>
+          )}
+
+          <div className={styles.prices}>
+            <span className={styles.currentPrice}>
               {formattedPrice}{" "}
-              {locale === "ar"
-                ? "ج.م"
-                : "EGP"}
+              {locale === "ar" ? "ج.م" : "EGP"}
             </span>
 
             {formattedOldPrice && (
-              <span
-                className={
-                  styles.oldPrice
-                }
-              >
+              <span className={styles.oldPrice}>
                 {formattedOldPrice}{" "}
-                {locale === "ar"
-                  ? "ج.م"
-                  : "EGP"}
+                {locale === "ar" ? "ج.م" : "EGP"}
               </span>
             )}
           </div>
 
           <button
-  type="button"
-  className={styles.cartButton}
-  onClick={handleAddToCart}
-  disabled={Boolean(loadingAction)}
-  aria-label={
-    locale === "ar"
-      ? "إضافة إلى العربة"
-      : "Add to cart"
-  }
->
-  <span>
-    {loadingAction === "cart"
-      ? locale === "ar"
-        ? "جارٍ الإضافة..."
-        : "Adding..."
-      : locale === "ar"
-        ? "إضافة إلى العربة"
-        : "Add to cart"}
-  </span>
+            type="button"
+            className={styles.cartButton}
+            onClick={handleAddToCart}
+            disabled={Boolean(loadingAction)}
+            aria-label={
+              locale === "ar"
+                ? "إضافة إلى العربة"
+                : "Add to cart"
+            }
+          >
+            <span>
+              {loadingAction === "cart"
+                ? locale === "ar"
+                  ? "جارٍ الإضافة..."
+                  : "Adding..."
+                : locale === "ar"
+                  ? "إضافة إلى العربة"
+                  : "Add to cart"}
+            </span>
 
-  {loadingAction === "cart" ? (
-    <FiLoader className={styles.spinner} />
-  ) : (
-    <FiShoppingCart />
-  )}
-</button>
+            {loadingAction === "cart" ? (
+              <FiLoader className={styles.spinner} />
+            ) : (
+              <FiShoppingCart />
+            )}
+          </button>
         </div>
       </article>
     </>

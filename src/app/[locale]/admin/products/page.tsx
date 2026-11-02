@@ -62,6 +62,7 @@ type Product = {
   name: Localized;
   description: Localized;
   slug: string;
+  warrantyDuration?: Localized;
   category: string;
   price: number;
   oldPrice?: number | null;
@@ -111,6 +112,7 @@ const emptyForm = () => ({
   category: "",
   price: "",
   oldPrice: "",
+  warrantyDuration: emptyLocalized(),
   serialNumber: "",
   stock: "0",
   featured: false,
@@ -459,6 +461,8 @@ setProducts(
         product.oldPrice === undefined
           ? ""
           : String(product.oldPrice),
+          warrantyDuration:
+  product.warrantyDuration || emptyLocalized(),
       serialNumber:
         product.serialNumber || "",
       stock:
@@ -809,6 +813,10 @@ const uploadImage = async (
         form.oldPrice
           ? Number(form.oldPrice)
           : null,
+          warrantyDuration: {
+  ar: form.warrantyDuration.ar.trim(),
+  en: form.warrantyDuration.en.trim(),
+},
       serialNumber:
         form.serialNumber.trim(),
       stock:
@@ -2021,7 +2029,42 @@ const uploadImage = async (
                       </span>
                     </div>
                   </Field>
+<Field label="مدة الضمان بالعربية">
+  <input
+    value={form.warrantyDuration.ar}
+    onChange={(event) => {
+      clearFormError();
 
+      setForm((current) => ({
+        ...current,
+        warrantyDuration: {
+          ...current.warrantyDuration,
+          ar: event.target.value,
+        },
+      }));
+    }}
+    placeholder="مثال: سنتان"
+  />
+</Field>
+
+<Field label="مدة الضمان بالإنجليزية">
+  <input
+    dir="ltr"
+    value={form.warrantyDuration.en}
+    onChange={(event) => {
+      clearFormError();
+
+      setForm((current) => ({
+        ...current,
+        warrantyDuration: {
+          ...current.warrantyDuration,
+          en: event.target.value,
+        },
+      }));
+    }}
+    placeholder="Example: 2 Years"
+  />
+</Field>
                   <Field label="المخزون">
                     <div className="product-stock-field">
                       <input

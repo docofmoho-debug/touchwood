@@ -35,6 +35,14 @@ const categoryConfigs: CategoryConfig[] = [
   },
 ];
 
+const chairCategories = [
+  "chairs",
+  "mesh-chairs",
+  "leather-chairs",
+  "bar-chairs",
+  "laboratory-chairs",
+];
+
 function normalizeProducts(response: unknown): Product[] {
   if (Array.isArray(response)) {
     return response as Product[];
@@ -74,31 +82,6 @@ function normalizeProducts(response: unknown): Product[] {
   return [];
 }
 
-function getProductName(
-  name: Product["name"],
-  locale: "ar" | "en",
-): string {
-  if (typeof name === "string") {
-    return name;
-  }
-
-  if (!name || typeof name !== "object") {
-    return "";
-  }
-
-  return name[locale] || name.ar || name.en || "";
-}
-
-function isChairProduct(product: Product): boolean {
-  const nameAr = getProductName(product.name, "ar");
-  const nameEn = getProductName(product.name, "en");
-
-  return (
-    /كرسي|كراسي/i.test(nameAr) ||
-    /\bchairs?\b/i.test(nameEn)
-  );
-}
-
 export default function CategoryProductSections() {
   const params = useParams();
 
@@ -130,18 +113,29 @@ export default function CategoryProductSections() {
             let products: Product[] = [];
 
             if (category.slug === "chairs") {
-              // جلب المنتجات دون تقييدها بكاتيجوري الكراسي.
-              // إذا كان الـ API يدعم البحث بالاسم، فالأفضل
-              // استخدامه أو جلب الصفحات بالتتابع.
-              const response = await getProducts({
-                active: true,
-                limit: 1000,
-                page: 1,
-              });
+              const responses = await Promise.all(
+                chairCategories.map((slug) =>
+                  getProducts({
+                    category: slug,
+                    active: true,
+                    limit: 7,
+                    page: 1,
+                  }),
+                ),
+              );
 
-              products = normalizeProducts(response)
-                .filter(isChairProduct)
-                .slice(0, 7);
+              const allProducts = responses.flatMap(normalizeProducts);
+
+              const uniqueProducts = Array.from(
+                new Map(
+                  allProducts.map((product) => [
+                    product._id || product.slug,
+                    product,
+                  ]),
+                ).values(),
+              );
+
+              products = uniqueProducts.slice(0, 7);
             } else {
               const response = await getProducts({
                 category: category.slug,

@@ -119,7 +119,13 @@ const productSchema = new Schema(
       type: localizedSchema,
       required: true,
     },
-
+warrantyDuration: {
+  type: localizedSchema,
+  default: () => ({
+    ar: "",
+    en: "",
+  }),
+},
     description: {
       type: localizedSchema,
       required: true,

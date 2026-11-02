@@ -549,4 +549,51 @@
     width: 14px;
     height: 14px;
   }
+}.warrantyBadge {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 29px;
+  margin-top: 8px;
+  padding: 5px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(198, 40, 40, 0.16);
+  border-radius: 6px;
+  background: #fff4f3;
+  color: #c62828;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.warrantyBadge svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+.warrantyBadge {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 29px;
+  margin-top: 8px;
+  padding: 5px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(198, 40, 40, 0.16);
+  border-radius: 6px;
+  background: #fff4f3;
+  color: #c62828;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.warrantyBadge svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }

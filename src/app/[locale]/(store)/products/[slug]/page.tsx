@@ -107,7 +107,7 @@ type Product = {
   _id: string;
   slug: string;
   name: Localized;
-  description: Localized;
+  description: Localized;warrantyDuration?: Localized;
   price: number;
   oldPrice?: number | null;
   category: string;
@@ -889,7 +889,25 @@ setReviews([
                 </del>
               ) : null}
             </div>
+{(product.warrantyDuration?.[locale] ||
+  product.warrantyDuration?.ar ||
+  product.warrantyDuration?.en) && (
+  <div className={styles.warrantyBox}>
+    <ShieldCheck size={20} />
 
+    <div>
+      <span>
+        {t(locale, "مدة الضمان", "Warranty Duration")}
+      </span>
+
+      <strong>
+        {product.warrantyDuration?.[locale] ||
+          product.warrantyDuration?.ar ||
+          product.warrantyDuration?.en}
+      </strong>
+    </div>
+  </div>
+)}
             {product.colors &&
               product.colors.length > 0 && (
                 <div
